@@ -1,0 +1,25 @@
+/* You can add global styles to this file, and also import other style files */
+
+/* PrimeNG */
+@import 'primeng/resources/themes/lara-light-blue/theme.css';
+@import 'primeng/resources/primeng.css';
+@import 'mapbox-gl/dist/mapbox-gl.css';
+
+html {
+    font-family: var(--font-family);
+    font-size: 14px;
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+}
+
+:root {
+    --safe-area: 0.5rem;
+    --safe-area-top: 4.64rem;
+    --safe-area-left: var(--safe-area);
+    --safe-area-right: var(--safe-area);
+    --safe-area-bottom: var(--safe-area);
+    --sidebar-size: 8rem;
+}
