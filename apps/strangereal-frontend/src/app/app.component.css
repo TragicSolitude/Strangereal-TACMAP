@@ -11,3 +11,14 @@ nav {
     width: 100%;
     padding: 0.5rem;
 }
+
+main {
+    width: 100vw;
+    height: 100vh;
+}
+
+main > :not(router-outlet) {
+    display: block;
+    height: 100%;
+    width: 100%;
+}

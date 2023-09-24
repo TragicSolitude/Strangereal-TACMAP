@@ -1,0 +1,9 @@
+<figure #container></figure>
+<div class="tooltip" #tooltip></div>
+<div class="allegiance" [ngSwitch]="currentAllegiance">
+    <span *ngSwitchCase="Allegiance.Friendly" class="friendly">FRIENDLY</span>
+    <span *ngSwitchCase="Allegiance.Hostile" class="hostile">HOSTILE</span>
+    <span *ngSwitchCase="Allegiance.Neutral" class="neutral">NEUTRAL</span>
+    <span *ngSwitchCase="Allegiance.Unknown" class="unknown">UNKNOWN</span>
+</div>
+<!-- <p-contextMenu [target]="container" [model]="contextMenuItems"></p-contextMenu> -->

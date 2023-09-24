@@ -3,7 +3,8 @@
 /* PrimeNG */
 @import 'primeng/resources/themes/lara-light-blue/theme.css';
 @import 'primeng/resources/primeng.css';
-@import 'mapbox-gl/dist/mapbox-gl.css';
+@import 'primeicons/primeicons.css';
+/* @import 'mapbox-gl/dist/mapbox-gl.css'; */
 
 html {
     font-family: var(--font-family);
@@ -14,6 +15,38 @@ html {
 body {
     margin: 0;
 }
+
+/* FORMS */
+
+form > .field:not(:last-child) {
+    margin-bottom: 1em;
+}
+
+form > .field > .p-element:not(:first-child) {
+    margin-left: 0.5em;
+}
+
+form > .field.fullwidth > input,
+form > .field.fullwidth > .p-inputwrapper > .p-dropdown {
+    width: 100%;
+}
+
+form > .field.buttons {
+    display: block;
+    text-align: end;
+    margin-top: 1.8em;
+}
+
+form > .field > label {
+    display: block;
+    margin-bottom: 0.5em;
+}
+
+form > .field > input {
+    display: block;
+}
+
+/* END FORMS */
 
 :root {
     --safe-area: 0.5rem;

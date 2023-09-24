@@ -1,0 +1,47 @@
+:host {
+    display: block;
+}
+
+figure {
+    overflow: hidden;
+    height: 100%;
+    width: 100%;
+    margin: 0;
+}
+
+.tooltip {
+    display: none;
+    position: absolute;
+    top: 0;
+    left: 0;
+    background-color: white;
+    border: solid 1px black;
+    border-radius: 2px;
+    padding: 0.5em;
+    max-width: 18em;
+}
+
+.allegiance {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    padding: 0.5em;
+    font-weight: bold;
+    font-family: monospace;
+}
+
+.allegiance .friendly {
+    color: blue;
+}
+
+.allegiance .hostile {
+    color: red;
+}
+
+.allegiance .neutral {
+    color: green;
+}
+
+.allegiance .unknown {
+    color: grey;
+}

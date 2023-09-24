@@ -1,0 +1,53 @@
+<form [formGroup]="formGroup">
+    <div class="field fullwidth">
+        <label for="form-type">Type</label>
+        <p-dropdown
+                formControlName="type"
+                appendTo="body"
+                [options]="markerTypes"
+                [filter]="true"
+                filterBy="name"
+                [resetFilterOnHide]="true"
+                [showClear]="true"
+                optionLabel="name"
+                placeholder="Select Type"
+                [virtualScroll]="true"
+                [virtualScrollItemSize]="42"
+                [autofocusFilter]="true"
+                #typeDropdown>
+            <ng-template let-item pTemplate="selectedItem">
+                <div class="symbology-item">
+                    <svg viewBox="0 0 100 100" class="list-icon">
+                        <use [attr.xlink:href]="'/assets/symbology-sprite.svg#symbology-' + item.value" />
+                    </svg>
+                    <span>{{ item.name }}</span>
+                </div>
+            </ng-template>
+            <ng-template let-item pTemplate="item">
+                <div class="symbology-item">
+                    <svg viewBox="0 0 100 100" class="list-icon">
+                        <use [attr.xlink:href]="'/assets/symbology-sprite.svg#symbology-' + item.value" />
+                    </svg>
+                    <span>{{ item.name }}</span>
+                </div>
+            </ng-template>
+        </p-dropdown>
+    </div>
+    <div class="field fullwidth">
+        <label for="form-name">Name (optional)</label>
+        <input type="text" pInputText formControlName="name" id="form-name"/>
+    </div>
+    <div class="field buttons">
+        <button pButton
+                type="button"
+                label="Cancel"
+                class="p-button-danger"
+                (click)="dialogRef.close()">
+        </button>
+        <button pButton
+                type="button"
+                label="Submit"
+                (click)="submit()">
+        </button>
+    </div>
+</form>
