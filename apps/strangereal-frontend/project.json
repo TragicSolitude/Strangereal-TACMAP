@@ -1,81 +1,84 @@
 {
-  "name": "strangereal-frontend",
-  "$schema": "../../node_modules/nx/schemas/project-schema.json",
-  "projectType": "application",
-  "prefix": "strangereal",
-  "sourceRoot": "apps/strangereal-frontend/src",
-  "tags": [],
-  "targets": {
-    "build": {
-      "executor": "@angular-devkit/build-angular:browser-esbuild",
-      "outputs": ["{options.outputPath}"],
-      "options": {
-        "outputPath": "dist/apps/strangereal-frontend",
-        "index": "apps/strangereal-frontend/src/index.html",
-        "main": "apps/strangereal-frontend/src/main.ts",
-        "polyfills": ["zone.js"],
-        "tsConfig": "apps/strangereal-frontend/tsconfig.app.json",
-        "assets": [
-          "apps/strangereal-frontend/src/favicon.ico",
-          "apps/strangereal-frontend/src/assets"
-        ],
-        "styles": ["apps/strangereal-frontend/src/styles.css"],
-        "scripts": []
-      },
-      "configurations": {
-        "production": {
-          "outputHashing": "all"
+    "name": "strangereal-frontend",
+    "$schema": "../../node_modules/nx/schemas/project-schema.json",
+    "projectType": "application",
+    "prefix": "strangereal",
+    "sourceRoot": "apps/strangereal-frontend/src",
+    "tags": [],
+    "targets": {
+        "build": {
+            "executor": "@angular-devkit/build-angular:browser-esbuild",
+            "outputs": ["{options.outputPath}"],
+            "options": {
+                "outputPath": "dist/apps/strangereal-frontend",
+                "index": "apps/strangereal-frontend/src/index.html",
+                "main": "apps/strangereal-frontend/src/main.ts",
+                "polyfills": ["zone.js"],
+                "tsConfig": "apps/strangereal-frontend/tsconfig.app.json",
+                "assets": [
+                    "apps/strangereal-frontend/src/favicon.ico",
+                    "apps/strangereal-frontend/src/assets"
+                ],
+                "styles": ["apps/strangereal-frontend/src/styles.css"],
+                "scripts": []
+            },
+            "configurations": {
+                "production": {
+                    "outputHashing": "all"
+                },
+                "development": {
+                    "buildOptimizer": false,
+                    "optimization": false,
+                    "extractLicenses": false,
+                    "sourceMap": true
+                }
+            },
+            "defaultConfiguration": "production"
         },
-        "development": {
-          "buildOptimizer": false,
-          "optimization": false,
-          "extractLicenses": false,
-          "sourceMap": true
-        }
-      },
-      "defaultConfiguration": "production"
-    },
-    "serve": {
-      "executor": "@angular-devkit/build-angular:dev-server",
-      "configurations": {
-        "production": {
-          "browserTarget": "strangereal-frontend:build:production"
+        "serve": {
+            "executor": "@angular-devkit/build-angular:dev-server",
+            "configurations": {
+                "production": {
+                    "browserTarget": "strangereal-frontend:build:production"
+                },
+                "development": {
+                    "browserTarget": "strangereal-frontend:build:development"
+                }
+            },
+            "defaultConfiguration": "development",
+            "options": {
+                "proxyConfig": "apps/strangereal-frontend/proxy.conf.json"
+            }
         },
-        "development": {
-          "browserTarget": "strangereal-frontend:build:development"
+        "extract-i18n": {
+            "executor": "@angular-devkit/build-angular:extract-i18n",
+            "options": {
+                "browserTarget": "strangereal-frontend:build"
+            }
+        },
+        "lint": {
+            "executor": "@nx/linter:eslint",
+            "outputs": ["{options.outputFile}"],
+            "options": {
+                "lintFilePatterns": [
+                    "apps/strangereal-frontend/**/*.ts",
+                    "apps/strangereal-frontend/**/*.html"
+                ]
+            }
+        },
+        "test": {
+            "executor": "@nx/jest:jest",
+            "outputs": ["{workspaceRoot}/coverage/{projectRoot}"],
+            "options": {
+                "jestConfig": "apps/strangereal-frontend/jest.config.ts",
+                "passWithNoTests": true
+            },
+            "configurations": {
+                "ci": {
+                    "ci": true,
+                    "codeCoverage": true
+                }
+            }
         }
-      },
-      "defaultConfiguration": "development"
-    },
-    "extract-i18n": {
-      "executor": "@angular-devkit/build-angular:extract-i18n",
-      "options": {
-        "browserTarget": "strangereal-frontend:build"
-      }
-    },
-    "lint": {
-      "executor": "@nx/linter:eslint",
-      "outputs": ["{options.outputFile}"],
-      "options": {
-        "lintFilePatterns": [
-          "apps/strangereal-frontend/**/*.ts",
-          "apps/strangereal-frontend/**/*.html"
-        ]
-      }
-    },
-    "test": {
-      "executor": "@nx/jest:jest",
-      "outputs": ["{workspaceRoot}/coverage/{projectRoot}"],
-      "options": {
-        "jestConfig": "apps/strangereal-frontend/jest.config.ts",
-        "passWithNoTests": true
-      },
-      "configurations": {
-        "ci": {
-          "ci": true,
-          "codeCoverage": true
-        }
-      }
     }
-  }
 }

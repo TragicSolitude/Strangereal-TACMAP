@@ -1,0 +1,64 @@
+{
+    "name": "strangereal-api",
+    "$schema": "../../node_modules/nx/schemas/project-schema.json",
+    "sourceRoot": "apps/strangereal-api/src",
+    "projectType": "application",
+    "targets": {
+        "build": {
+            "executor": "@nx/webpack:webpack",
+            "outputs": ["{options.outputPath}"],
+            "defaultConfiguration": "production",
+            "options": {
+                "target": "node",
+                "compiler": "tsc",
+                "outputPath": "dist/apps/strangereal-api",
+                "main": "apps/strangereal-api/src/main.ts",
+                "tsConfig": "apps/strangereal-api/tsconfig.app.json",
+                "assets": ["apps/strangereal-api/src/assets"],
+                "isolatedConfig": true,
+                "webpackConfig": "apps/strangereal-api/webpack.config.js"
+            },
+            "configurations": {
+                "development": {},
+                "production": {}
+            }
+        },
+        "serve": {
+            "executor": "@nx/js:node",
+            "defaultConfiguration": "development",
+            "options": {
+                "buildTarget": "strangereal-api:build"
+            },
+            "configurations": {
+                "development": {
+                    "buildTarget": "strangereal-api:build:development"
+                },
+                "production": {
+                    "buildTarget": "strangereal-api:build:production"
+                }
+            }
+        },
+        "lint": {
+            "executor": "@nx/linter:eslint",
+            "outputs": ["{options.outputFile}"],
+            "options": {
+                "lintFilePatterns": ["apps/strangereal-api/**/*.ts"]
+            }
+        },
+        "test": {
+            "executor": "@nx/jest:jest",
+            "outputs": ["{workspaceRoot}/coverage/{projectRoot}"],
+            "options": {
+                "jestConfig": "apps/strangereal-api/jest.config.ts",
+                "passWithNoTests": true
+            },
+            "configurations": {
+                "ci": {
+                    "ci": true,
+                    "codeCoverage": true
+                }
+            }
+        }
+    },
+    "tags": []
+}

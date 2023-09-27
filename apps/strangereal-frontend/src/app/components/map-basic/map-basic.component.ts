@@ -3,9 +3,11 @@ import { CommonModule } from '@angular/common';
 import { ContextMenuModule } from 'primeng/contextmenu';
 import { Marker } from '../../../types/marker';
 import * as D3 from 'd3';
-import * as MarkerType from '../../../types/marker-type';
 import { DialogService, DynamicDialogRef } from 'primeng/dynamicdialog';
 import { MarkerDetailsComponent } from '../marker-details/marker-details.component';
+import { MarkerType } from '@strangereal/util-constants';
+import { MarkerRepository } from '@strangereal/data-access-api';
+import { filter, firstValueFrom, tap } from 'rxjs';
 
 /**
  * The bounds for how much you can zoom in/out of the map
@@ -60,13 +62,15 @@ export class MapBasicComponent implements AfterViewInit, OnInit {
     currentAllegiance: MarkerType.Allegiance | undefined = undefined;
 
     private tooltip!: D3.Selection<HTMLElement, unknown, null, unknown>;
+    private map!: D3.Selection<HTMLElement, unknown, null, unknown>;
     private overlay!: D3.Selection<SVGGElement, unknown, null, unknown>;
-    private base!: D3.Selection<SVGGElement, unknown, null, unknown>;
+    private baseElement!: SVGGElement;
     private mapElement!: HTMLElement;
     private dialog: DynamicDialogRef | undefined;
-    private lastMarker: Marker | undefined;
+    private lastMarker: (Marker & { id?: number }) | undefined;
 
-    constructor(private readonly dialogService: DialogService) {}
+    constructor(private readonly dialogService: DialogService,
+                private readonly markerRepository: MarkerRepository) {}
 
     ngOnInit(): void {
         if (!this.markers) {
@@ -84,12 +88,21 @@ export class MapBasicComponent implements AfterViewInit, OnInit {
         this.tooltip = D3.select(this.tooltipRef.nativeElement);
 
         // Load map
-        D3.svg('assets/map.svg').then(xml => {
-            node.appendChild(xml.documentElement);
+        D3.svg('assets/map.svg')
+            .then(xml => {
+                node.appendChild(xml.documentElement);
 
-            const map = container.select<HTMLElement>('svg');
-            this.initializeMap(map);
-        });
+                const map = container.select<HTMLElement>('svg');
+                this.map = map;
+                this.initializeMap(map);
+
+                return this.markerRepository.getAll();
+            })
+            .then(markers => {
+                for (const marker of markers) {
+                    this.addMarker(marker);
+                }
+            });
     }
 
     @HostListener('document:keydown', ['$event'])
@@ -114,13 +127,19 @@ export class MapBasicComponent implements AfterViewInit, OnInit {
                 this.currentAllegiance = MarkerType.Allegiance.Unknown;
                 break;
             case 'KeyR':
-                if (this.lastMarker) {
+                if (!event.ctrlKey && this.lastMarker) {
                     const newMarker = {...this.lastMarker,
                         x: this.lastMarker.x + 8,
                         y: this.lastMarker.y + 8
                     };
+                    const node = this.addMarker(newMarker);
                     this.lastMarker = newMarker;
-                    this.addMarker(newMarker);
+                    this.markers.set(node, newMarker);
+
+                    this.markerRepository.create(newMarker).then(id => {
+                        newMarker.id = id;
+                        node.classList.remove('pending');
+                    });
                 }
                 break;
             case 'ControlLeft':
@@ -145,8 +164,14 @@ export class MapBasicComponent implements AfterViewInit, OnInit {
         }
 
         this.mapElement = mapElement;
-        this.overlay = map.selectChild('g#markers');
-        this.base = map.selectChild('g#base');
+        this.overlay = map.append('g').attr('id', 'overlay');
+
+        const baseElement = map.selectChild<SVGGElement>('g#background').node();
+        if (!baseElement) {
+            throw new Error('Base layer not initialized');
+        }
+
+        this.baseElement = baseElement;
 
         map.on('click', e => this.onClick(e));
 
@@ -155,7 +180,7 @@ export class MapBasicComponent implements AfterViewInit, OnInit {
         if (!viewBox) {
             throw new Error('No viewbox on map element');
         }
-        const [x0, y0, x1, y1] = viewBox.split(',').map(Number);
+        const [x0, y0, x1, y1] = viewBox.split(/[,\s]/).map(Number);
         const zoom = D3.zoom<HTMLElement, unknown>()
             .scaleExtent(ZOOM_LIMIT)
             .translateExtent([[x0, y0], [x1, y1]])
@@ -166,8 +191,7 @@ export class MapBasicComponent implements AfterViewInit, OnInit {
     private onZoom(event: D3.D3ZoomEvent<Element, unknown>): void {
         const transform = event.transform.toString();
 
-        this.base.attr('transform', transform);
-        this.overlay.attr('transform', transform);
+        this.map.selectChildren('g').attr('transform', transform);
 
         const scale = Math.max(event.transform.k, MARKER_ZOOM_LIMIT);
         this.overlay.selectAll<SVGUseElement, unknown>('use').each(function () {
@@ -178,8 +202,8 @@ export class MapBasicComponent implements AfterViewInit, OnInit {
         });
     }
 
-    private onClick(event: Event): void {
-        const [x, y] = D3.pointer(event, this.base.node());
+    private async onClick(event: Event): Promise<void> {
+        const [x, y] = D3.pointer(event, this.baseElement);
         const allegiance = this.currentAllegiance;
 
         this.currentAllegiance = undefined;
@@ -190,19 +214,22 @@ export class MapBasicComponent implements AfterViewInit, OnInit {
             closeOnEscape: true
         });
 
-        this.dialog.onClose.subscribe((marker: Marker | undefined) => {
-            this.dialog = undefined;
-            if (!marker) {
-                return;
-            }
+        const marker = await firstValueFrom(this.dialog.onClose);
+        this.dialog = undefined;
+        if (!marker) {
+            return;
+        }
 
-            const node = this.addMarker(marker);
-            this.lastMarker = marker;
-            this.markers.set(node, marker);
-        });
+        const node = this.addMarker(marker);
+        this.lastMarker = marker;
+        this.markers.set(node, marker);
+
+        const id = await this.markerRepository.create(marker);
+        marker.id = id;
+        node.classList.remove('pending');
     }
 
-    private addMarker(marker: Marker): SVGUseElement {
+    private addMarker(marker: Marker & { id?: number }): SVGUseElement {
         const { x, y, type } = marker;
         const figure = this.overlay.append('use')
             .attr('xlink:href', `/assets/symbology-sprite.svg#symbology-${type}`)
@@ -210,6 +237,7 @@ export class MapBasicComponent implements AfterViewInit, OnInit {
             .attr('y', y - MARKER_SIZE / 2)
             .attr('width', MARKER_SIZE)
             .attr('height', MARKER_SIZE)
+            .classed('pending', true)
             // .attr('transform', centerScale(boundingBox, this.currentScale))
             // .attr('transform-origin', 'center')
             .on('mouseover', event => {
@@ -233,6 +261,7 @@ export class MapBasicComponent implements AfterViewInit, OnInit {
                 this.tooltip.style('display', 'none');
                 D3.select(event.target).style('stroke', 'none');
             });
+            // TODO click handler that opens dialog to edit or delete
 
         const node = figure.node();
         if (!node) {
@@ -247,19 +276,28 @@ export class MapBasicComponent implements AfterViewInit, OnInit {
             figure.attr('transform', centerScale(boundingBox, k));
         }
 
+        const callback = (event: D3.D3DragEvent<SVGUseElement, unknown, unknown>) => {
+            const boundingBox = node.getBBox();
+            const k = Math.max(D3.zoomTransform(this.mapElement).k, MARKER_ZOOM_LIMIT);
+
+            const [x, y] = D3.pointer(event, this.baseElement);
+            marker.x = x;
+            marker.y = y;
+            figure.attr('x', x - (MARKER_SIZE / 2))
+                  .attr('y', y - (MARKER_SIZE / 2))
+                  .attr('transform', centerScale(boundingBox, k));
+
+            if (event.type === 'end' && marker.id) {
+                node.classList.add('pending');
+                this.markerRepository.updatePosition(marker.id, x, y).then(() => {
+                    node.classList.remove('pending');
+                });
+            }
+        };
         figure.call(D3.drag<SVGUseElement, unknown>()
             .filter(event => event.shiftKey && !event.button)
-            .on('drag', (event: D3.D3DragEvent<SVGUseElement, unknown, unknown>) => {
-                const boundingBox = node.getBBox();
-                const k = Math.max(D3.zoomTransform(this.mapElement).k, MARKER_ZOOM_LIMIT);
-
-                const [x, y] = D3.pointer(event, this.base.node());
-                marker.x = x;
-                marker.y = y;
-                figure.attr('x', x - (MARKER_SIZE / 2))
-                      .attr('y', y - (MARKER_SIZE / 2))
-                      .attr('transform', centerScale(boundingBox, k));
-            }));
+            .on('drag', callback)
+            .on('end', callback));
 
         return node;
     }

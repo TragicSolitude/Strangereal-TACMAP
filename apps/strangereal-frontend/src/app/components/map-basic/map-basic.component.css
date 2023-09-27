@@ -21,6 +21,10 @@ figure {
     max-width: 18em;
 }
 
+.pending {
+    opacity: 0.3;
+}
+
 .allegiance {
     position: absolute;
     bottom: 0;

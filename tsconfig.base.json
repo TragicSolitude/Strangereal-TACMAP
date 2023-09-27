@@ -14,7 +14,15 @@
         "skipLibCheck": true,
         "skipDefaultLibCheck": true,
         "baseUrl": ".",
-        "paths": {}
+        "paths": {
+            "@strangereal/data-access-api": [
+                "libs/data-access-api/src/index.ts"
+            ],
+            "@strangereal/util-constants": ["libs/util-constants/src/index.ts"],
+            "@strangereal/util-nest-sqlite": [
+                "libs/util-nest-sqlite/src/index.ts"
+            ]
+        }
     },
     "exclude": ["node_modules", "tmp"]
 }

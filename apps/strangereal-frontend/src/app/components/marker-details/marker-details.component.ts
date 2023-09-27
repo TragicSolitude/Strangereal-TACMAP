@@ -5,8 +5,8 @@ import { InputTextModule } from 'primeng/inputtext';
 import { Dropdown, DropdownModule } from 'primeng/dropdown';
 import { ButtonModule } from 'primeng/button';
 import { DynamicDialogConfig, DynamicDialogRef } from 'primeng/dynamicdialog';
-import * as MarkerType from '../../../types/marker-type';
 import { AutoFocusModule } from 'primeng/autofocus';
+import { MarkerType } from '@strangereal/util-constants';
 
 interface Entry<T> {
     name: string;
