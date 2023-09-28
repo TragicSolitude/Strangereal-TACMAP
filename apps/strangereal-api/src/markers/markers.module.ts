@@ -7,7 +7,7 @@ import { UtilNestSqliteModule } from '@strangereal/util-nest-sqlite';
 @Module({
     imports: [
         UtilNestSqliteModule.register({
-            filename: '/tmp/database.db'
+            filename: process.env.DB_PATH || '/tmp/strangereal-database.sqlite'
         }),
     ],
     controllers: [MarkersController],

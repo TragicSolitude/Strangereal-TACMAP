@@ -16,7 +16,8 @@
                 "tsConfig": "apps/strangereal-api/tsconfig.app.json",
                 "assets": ["apps/strangereal-api/src/assets"],
                 "isolatedConfig": true,
-                "webpackConfig": "apps/strangereal-api/webpack.config.js"
+                "webpackConfig": "apps/strangereal-api/webpack.config.js",
+                "generatePackageJson": true
             },
             "configurations": {
                 "development": {},
