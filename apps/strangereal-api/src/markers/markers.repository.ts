@@ -36,7 +36,7 @@ export class MarkersRepository implements OnModuleInit {
     }
 
     getAllMarkers(): Promise<Array<WithId<Marker>>> {
-        const query = `SELECT x, y, type, name FROM markers`;
+        const query = `SELECT ROWID as id, x, y, type, name FROM markers`;
         return this.database.all<Array<WithId<MarkerDetails>>>(query);
     }
 

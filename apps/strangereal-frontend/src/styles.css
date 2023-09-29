@@ -16,6 +16,27 @@ body {
     margin: 0;
 }
 
+/* FONTS */
+
+@font-face {
+    font-family: 'Franklin Gothic Demi';
+    src:
+        local('Franklin Gothic Demi'),
+        url('/assets/font/static/LibreFranklin-Regular.ttf') format('truetype');
+}
+
+/* Fancy variable font; not currently needed
+@font-face {
+    font-family: 'Franklin Gothic Demi';
+    font-variation-settings: 'wght' 400;
+    src:
+        local('Franklin Gothic Demi'),
+        url('/assets/font/LibreFranklin-VariableFont_wght.ttf') format('truetype');
+}
+*/
+
+/* END FONTS */
+
 /* FORMS */
 
 form > .field:not(:last-child) {

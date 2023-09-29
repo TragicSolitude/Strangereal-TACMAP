@@ -7,7 +7,7 @@ import { DialogService, DynamicDialogRef } from 'primeng/dynamicdialog';
 import { MarkerDetailsComponent } from '../marker-details/marker-details.component';
 import { MarkerType } from '@strangereal/util-constants';
 import { MarkerRepository } from '@strangereal/data-access-api';
-import { filter, firstValueFrom, tap } from 'rxjs';
+import { firstValueFrom } from 'rxjs';
 
 /**
  * The bounds for how much you can zoom in/out of the map
@@ -19,7 +19,7 @@ const ZOOM_LIMIT = [1, 24] as [number, number];
  * zoom levels less than or equal to this value, the markers should remain the
  * same size relative to the map itself.
  */
-const MARKER_ZOOM_LIMIT = 8;
+const MARKER_ZOOM_LIMIT = 10;
 /**
  * The square width/height of the marker bounding boxes
  */
@@ -100,7 +100,7 @@ export class MapBasicComponent implements AfterViewInit, OnInit {
             })
             .then(markers => {
                 for (const marker of markers) {
-                    this.addMarker(marker);
+                    this.addMarker(marker, true);
                 }
             });
     }
@@ -229,7 +229,11 @@ export class MapBasicComponent implements AfterViewInit, OnInit {
         node.classList.remove('pending');
     }
 
-    private addMarker(marker: Marker & { id?: number }): SVGUseElement {
+    /**
+     * @param initial Indicates that the marker is part of the initial page
+     * load. Only a temporary solution to weird DOM race condition problems.
+     */
+    private addMarker(marker: Marker & { id?: number }, initial = false): SVGUseElement {
         const { x, y, type } = marker;
         const figure = this.overlay.append('use')
             .attr('xlink:href', `/assets/symbology-sprite.svg#symbology-${type}`)
@@ -237,7 +241,6 @@ export class MapBasicComponent implements AfterViewInit, OnInit {
             .attr('y', y - MARKER_SIZE / 2)
             .attr('width', MARKER_SIZE)
             .attr('height', MARKER_SIZE)
-            .classed('pending', true)
             // .attr('transform', centerScale(boundingBox, this.currentScale))
             // .attr('transform-origin', 'center')
             .on('mouseover', event => {
@@ -263,6 +266,10 @@ export class MapBasicComponent implements AfterViewInit, OnInit {
             });
             // TODO click handler that opens dialog to edit or delete
 
+        if (!marker.id) {
+            figure.classed('pending', true);
+        }
+
         const node = figure.node();
         if (!node) {
             figure.remove();
@@ -270,7 +277,26 @@ export class MapBasicComponent implements AfterViewInit, OnInit {
         }
 
         { // Initial transform
-            const boundingBox = node.getBBox();
+            // For whatever reason bbox is always 0, 0, 0, 0 on page load until
+            // some unknown event happens. I don't know what it is but it
+            // seems to happen about 300ms after the first marker is placed.
+            let boundingBox: DOMRect;
+            if (initial) {
+                // Width/Height scaling factor derived from experimentation. No idea
+                // if it will remain correct in different environments
+                //
+                // x and y offsets are also derived from experimentation. Also no
+                // idea if it will maintain nor what it represents
+                boundingBox = new DOMRect((x - MARKER_SIZE / 2) + 4.556884765625,
+                                          (y - MARKER_SIZE / 2) + 33.037994384765625,
+                                          // Width
+                                          MARKER_SIZE * 0.9493672688802083,
+                                          // Height
+                                          MARKER_SIZE * 0.6329111735026042);
+            } else {
+                boundingBox = node.getBBox();
+            }
+
             // TODO figure out how to get the event target and use that instead
             const k = Math.max(D3.zoomTransform(this.mapElement).k, MARKER_ZOOM_LIMIT);
             figure.attr('transform', centerScale(boundingBox, k));
