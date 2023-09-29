@@ -1,9 +1,11 @@
 import { AfterViewInit, ChangeDetectionStrategy, Component, ElementRef, HostListener, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ContextMenuModule } from 'primeng/contextmenu';
+import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { Marker } from '../../../types/marker';
 import * as D3 from 'd3';
 import { DialogService, DynamicDialogRef } from 'primeng/dynamicdialog';
+import { ConfirmationService, ConfirmEventType } from 'primeng/api';
 import { MarkerDetailsComponent } from '../marker-details/marker-details.component';
 import { MarkerType } from '@strangereal/util-constants';
 import { MarkerRepository } from '@strangereal/data-access-api';
@@ -41,8 +43,8 @@ function centerScale(boundingBox: DOMRect, k: number): string {
 @Component({
     selector: 'strangereal-map-basic',
     standalone: true,
-    imports: [CommonModule, ContextMenuModule],
-    providers: [DialogService],
+    imports: [CommonModule, ContextMenuModule, ConfirmDialogModule],
+    providers: [DialogService, ConfirmationService],
     templateUrl: './map-basic.component.html',
     styleUrls: ['./map-basic.component.css'],
     changeDetection: ChangeDetectionStrategy.OnPush,
@@ -70,6 +72,7 @@ export class MapBasicComponent implements AfterViewInit, OnInit {
     private lastMarker: (Marker & { id?: number }) | undefined;
 
     constructor(private readonly dialogService: DialogService,
+                private readonly confirmationService: ConfirmationService,
                 private readonly markerRepository: MarkerRepository) {}
 
     ngOnInit(): void {
@@ -202,7 +205,11 @@ export class MapBasicComponent implements AfterViewInit, OnInit {
         });
     }
 
-    private async onClick(event: Event): Promise<void> {
+    private async onClick(event: MouseEvent): Promise<void> {
+        if (event.ctrlKey) {
+            return;
+        }
+
         const [x, y] = D3.pointer(event, this.baseElement);
         const allegiance = this.currentAllegiance;
 
@@ -263,6 +270,34 @@ export class MapBasicComponent implements AfterViewInit, OnInit {
             .on('mouseleave', event => {
                 this.tooltip.style('display', 'none');
                 D3.select(event.target).style('stroke', 'none');
+            })
+            .on('click', (event: MouseEvent) => {
+                if (!event.ctrlKey) {
+                    return;
+                }
+
+                let message: string;
+                if (marker.name) {
+                    message = `Are you sure you want to remove the ${marker.name}?`;
+                } else {
+                    message = 'Are you sure you want to remove this unit?';
+                }
+
+                this.confirmationService.confirm({
+                    message,
+                    header: 'Remove Unit?',
+                    icon: 'pi pi-exclamation-triangle',
+                    accept: () => {
+                        if (!marker.id) {
+                            return;
+                        }
+
+                        figure.classed('pending', true);
+                        this.markerRepository.remove(marker.id).then(() => {
+                            figure.remove();
+                        });
+                    }
+                });
             });
             // TODO click handler that opens dialog to edit or delete
 
