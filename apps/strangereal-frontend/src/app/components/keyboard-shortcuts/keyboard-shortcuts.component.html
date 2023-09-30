@@ -1,0 +1,8 @@
+<p-table [value]="keybinds">
+    <ng-template pTemplate="body" let-keybind>
+        <tr>
+            <td>{{ formatKey(keybind) }}</td>
+            <td>{{ keybind.description }}</td>
+        </tr>
+    </ng-template>
+</p-table>

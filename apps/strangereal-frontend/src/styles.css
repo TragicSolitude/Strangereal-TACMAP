@@ -37,6 +37,14 @@ body {
 
 /* END FONTS */
 
+/* CUSTOMIZE PRIMENG */
+
+.p-contextmenu {
+    width: 15em;
+}
+
+/* END CUSTOMIZE PRIMENG */
+
 /* FORMS */
 
 form > .field:not(:last-child) {

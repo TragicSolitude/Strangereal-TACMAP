@@ -5,11 +5,14 @@ import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { Marker } from '../../../types/marker';
 import * as D3 from 'd3';
 import { DialogService, DynamicDialogRef } from 'primeng/dynamicdialog';
-import { ConfirmationService, ConfirmEventType } from 'primeng/api';
+import { ConfirmationService, ConfirmEventType, MenuItem } from 'primeng/api';
 import { MarkerDetailsComponent } from '../marker-details/marker-details.component';
 import { MarkerType } from '@strangereal/util-constants';
 import { MarkerRepository } from '@strangereal/data-access-api';
 import { firstValueFrom } from 'rxjs';
+import { KeyboardShortcutsComponent } from '../keyboard-shortcuts/keyboard-shortcuts.component';
+import { KeyboardShortcutsService, Modifier } from '../keyboard-shortcuts/keyboard-shortcuts.service';
+import { HelpComponent } from '../help/help.component';
 
 /**
  * The bounds for how much you can zoom in/out of the map
@@ -43,8 +46,14 @@ function centerScale(boundingBox: DOMRect, k: number): string {
 @Component({
     selector: 'strangereal-map-basic',
     standalone: true,
-    imports: [CommonModule, ContextMenuModule, ConfirmDialogModule],
-    providers: [DialogService, ConfirmationService],
+    imports: [
+        CommonModule,
+        ContextMenuModule,
+        ConfirmDialogModule,
+        HelpComponent,
+        KeyboardShortcutsComponent
+    ],
+    providers: [DialogService, ConfirmationService, KeyboardShortcutsService],
     templateUrl: './map-basic.component.html',
     styleUrls: ['./map-basic.component.css'],
     changeDetection: ChangeDetectionStrategy.OnPush,
@@ -63,6 +72,15 @@ export class MapBasicComponent implements AfterViewInit, OnInit {
     // TODO Maybe turn this into a modal kind of thing?
     currentAllegiance: MarkerType.Allegiance | undefined = undefined;
 
+    readonly contextMenuItems: MenuItem[] = [
+        {label: 'Help',
+         icon: 'pi pi-question-circle',
+         command: () => this.showHelp()},
+        {label: 'Keyboard Shortcuts',
+         icon: 'pi pi-sliders-h',
+         command: () => this.keyboardShortcutsService.showHelp()}
+    ];
+
     private tooltip!: D3.Selection<HTMLElement, unknown, null, unknown>;
     private map!: D3.Selection<HTMLElement, unknown, null, unknown>;
     private overlay!: D3.Selection<SVGGElement, unknown, null, unknown>;
@@ -73,12 +91,56 @@ export class MapBasicComponent implements AfterViewInit, OnInit {
 
     constructor(private readonly dialogService: DialogService,
                 private readonly confirmationService: ConfirmationService,
+                private readonly keyboardShortcutsService: KeyboardShortcutsService,
                 private readonly markerRepository: MarkerRepository) {}
 
     ngOnInit(): void {
         if (!this.markers) {
             this.markers = new WeakMap();
         }
+
+        this.keyboardShortcutsService.register([
+            {key: 'KeyF',
+             description: 'Create friendly unit',
+             onKeyDown: () => { this.currentAllegiance = MarkerType.Allegiance.Friendly }},
+            {key: 'KeyH',
+             description: 'Create hostile unit',
+             onKeyDown: () => { this.currentAllegiance = MarkerType.Allegiance.Hostile }},
+            {key: 'KeyN',
+             description: 'Create neutral unit',
+             onKeyDown: () => { this.currentAllegiance = MarkerType.Allegiance.Neutral }},
+            {key: 'KeyU',
+             description: 'Create unknown unit',
+             onKeyDown: () => { this.currentAllegiance = MarkerType.Allegiance.Unknown }},
+            {key: 'KeyR',
+             description: 'Repeat last unit',
+             onKeyDown: event => {
+                if (event.ctrlKey || !this.lastMarker) {
+                    return;
+                }
+
+                const newMarker = {...this.lastMarker,
+                    x: this.lastMarker.x + 8,
+                    y: this.lastMarker.y + 8
+                };
+                const node = this.addMarker(newMarker);
+                this.lastMarker = newMarker;
+                this.markers.set(node, newMarker);
+
+                this.markerRepository.create(newMarker).then(id => {
+                    newMarker.id = id;
+                    node.classList.remove('pending');
+                });
+             }
+            },
+            {key: 'Escape',
+             description: 'Reset next unit allegiance',
+             onKeyDown: () => { this.currentAllegiance = undefined; }},
+            {key: 'Slash',
+             modifiers: [Modifier.Shift],
+             description: 'Show keybinds help',
+             onKeyDown: () => { this.keyboardShortcutsService.showHelp() }}
+        ]);
     }
 
     ngAfterViewInit(): void {
@@ -108,6 +170,7 @@ export class MapBasicComponent implements AfterViewInit, OnInit {
             });
     }
 
+    // TODO figure out how to localize the key events?
     @HostListener('document:keydown', ['$event'])
     onKeyDown(event: KeyboardEvent): void {
         if (this.dialog) {
@@ -116,48 +179,7 @@ export class MapBasicComponent implements AfterViewInit, OnInit {
             return;
         }
 
-        switch (event.code) {
-            case 'KeyF':
-                this.currentAllegiance = MarkerType.Allegiance.Friendly;
-                break;
-            case 'KeyH':
-                this.currentAllegiance = MarkerType.Allegiance.Hostile;
-                break;
-            case 'KeyN':
-                this.currentAllegiance = MarkerType.Allegiance.Neutral;
-                break;
-            case 'KeyU':
-                this.currentAllegiance = MarkerType.Allegiance.Unknown;
-                break;
-            case 'KeyR':
-                if (!event.ctrlKey && this.lastMarker) {
-                    const newMarker = {...this.lastMarker,
-                        x: this.lastMarker.x + 8,
-                        y: this.lastMarker.y + 8
-                    };
-                    const node = this.addMarker(newMarker);
-                    this.lastMarker = newMarker;
-                    this.markers.set(node, newMarker);
-
-                    this.markerRepository.create(newMarker).then(id => {
-                        newMarker.id = id;
-                        node.classList.remove('pending');
-                    });
-                }
-                break;
-            case 'ControlLeft':
-            case 'ControlRight':
-            case 'ShiftLeft':
-            case 'ShiftRight':
-            case 'AltLeft':
-            case 'AltRight':
-                // Modifier keys are a no-op
-                break;
-            case 'Escape': // Escape
-            default:
-                this.currentAllegiance = undefined;
-                break;
-        }
+        this.keyboardShortcutsService.keyDown(event).catch();
     }
 
     private initializeMap(map: D3.Selection<HTMLElement, unknown, null, unknown>): void {
@@ -361,5 +383,13 @@ export class MapBasicComponent implements AfterViewInit, OnInit {
             .on('end', callback));
 
         return node;
+    }
+
+    private showHelp(): void {
+        this.dialogService.open(HelpComponent, {
+            header: 'Help',
+            width: '28em',
+            closeOnEscape: true
+        });
     }
 }
