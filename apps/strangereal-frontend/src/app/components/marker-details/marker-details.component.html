@@ -1,4 +1,4 @@
-<form [formGroup]="formGroup">
+<form [formGroup]="formGroup" (ngSubmit)="submit()">
     <div class="field fullwidth">
         <label for="form-type">Type</label>
         <p-dropdown
@@ -13,7 +13,6 @@
                 placeholder="Select Type"
                 [virtualScroll]="true"
                 [virtualScrollItemSize]="42"
-                [autofocusFilter]="true"
                 #typeDropdown>
             <ng-template let-item pTemplate="selectedItem">
                 <div class="symbology-item">
@@ -45,9 +44,8 @@
                 (click)="dialogRef.close()">
         </button>
         <button pButton
-                type="button"
-                label="Submit"
-                (click)="submit()">
+                type="submit"
+                label="Submit">
         </button>
     </div>
 </form>
