@@ -19,6 +19,7 @@
                 "libs/data-access-api/src/index.ts"
             ],
             "@strangereal/util-constants": ["libs/util-constants/src/index.ts"],
+            "@strangereal/util-nest-auth": ["libs/util-nest-auth/src/index.ts"],
             "@strangereal/util-nest-sqlite": [
                 "libs/util-nest-sqlite/src/index.ts"
             ]

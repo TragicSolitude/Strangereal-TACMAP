@@ -6,19 +6,11 @@ import * as Error from './error';
 import { WithId } from "@strangereal/util-constants";
 
 @Injectable()
-export class MarkersRepository implements OnModuleInit {
+export class MarkersRepository {
     private readonly database: Sqlite.Database;
 
     constructor(dbConnection: DbConnection) {
         this.database = dbConnection.database;
-    }
-
-    async onModuleInit(): Promise<void> {
-        await this.database.exec(`
-            CREATE TABLE IF NOT EXISTS
-                markers (x NUMBER NOT NULL, y NUMBER NOT NULL,
-                         type TEXT NOT NULL, name TEXT)
-        `);
     }
 
     async createMarker(marker: Marker): Promise<number> {

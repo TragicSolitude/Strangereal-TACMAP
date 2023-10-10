@@ -11,6 +11,10 @@ export class UtilNestSqliteModule {
             module: UtilNestSqliteModule,
             providers: [
                 {
+                    provide: 'database-config',
+                    useValue: config
+                },
+                {
                     provide: 'database',
                     useFactory: () => {
                         return Sqlite.open({
