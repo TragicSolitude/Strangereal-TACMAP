@@ -27,6 +27,14 @@ export class MarkersRepository {
         throw new Error.InsertFailed();
     }
 
+    getMarkersForUser(userId: number): Promise<Array<WithId<Marker>>> {
+        const query = `
+            SELECT ROWID as id, x, y, type, name FROM markers
+            WHERE ROWID = ?
+        `;
+        return this.database.all<Array<WithId<MarkerDetails>>>(query, userId);
+    }
+
     getAllMarkers(): Promise<Array<WithId<Marker>>> {
         const query = `SELECT ROWID as id, x, y, type, name FROM markers`;
         return this.database.all<Array<WithId<MarkerDetails>>>(query);

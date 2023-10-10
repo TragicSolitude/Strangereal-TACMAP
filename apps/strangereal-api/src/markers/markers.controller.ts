@@ -5,14 +5,17 @@ import {
     Body,
     Patch,
     Param,
-    Delete
+    Delete,
+    UseGuards
 } from '@nestjs/common';
 import { MarkersService } from './markers.service';
 import { CreateMarkerDto } from './dto/create-marker.dto';
 import { UpdateMarkerDto } from './dto/update-marker.dto';
 import { WithId } from '@strangereal/util-constants';
 import { Marker } from './entities/marker.entity';
+import { AuthGuard, Claims, TokenClaims } from '@strangereal/util-nest-auth';
 
+@UseGuards(AuthGuard)
 @Controller('markers')
 export class MarkersController {
     constructor(private readonly markersService: MarkersService) {}
@@ -25,7 +28,7 @@ export class MarkersController {
     }
 
     @Get()
-    findAll(): Promise<Array<WithId<Marker>>> {
+    findAll(@Claims() claims: TokenClaims): Promise<Array<WithId<Marker>>> {
         return this.markersService.findAll();
     }
 

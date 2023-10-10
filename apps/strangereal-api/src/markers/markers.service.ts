@@ -24,8 +24,12 @@ export class MarkersService {
         return this.markersRepository.createMarker(marker);
     }
 
-    findAll(): Promise<Array<WithId<Marker>>> {
-        return this.markersRepository.getAllMarkers();
+    findAll(userId?: number): Promise<Array<WithId<Marker>>> {
+        if (userId) {
+            return this.markersRepository.getMarkersForUser(userId);
+        } else {
+            return this.markersRepository.getAllMarkers();
+        }
     }
 
     findOne(id: number) {
