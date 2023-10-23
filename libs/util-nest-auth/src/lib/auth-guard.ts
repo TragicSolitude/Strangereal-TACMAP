@@ -5,7 +5,7 @@ import { RequirePermission } from './require-permission-decorator';
 import { JwtService } from '@nestjs/jwt';
 import { TokenClaims } from './token-claims';
 
-const parseAuthorization = /^(bearer)\\s+([A-z0-9])$/;
+const parseAuthorization = /^(?<type>bearer)\s+(?<value>[A-z0-9._-]+)$/i;
 
 /**
  * Extracts the auth token out of the authorization header
@@ -20,12 +20,12 @@ function extractTokenFromHeader(request: IncomingMessage): string | undefined {
     }
 
     const result = parseAuthorization.exec(authorization);
-    if (!result || result.length < 3) {
+    if (!result || !result.groups) {
         return undefined;
     }
 
-    const [, type, value] = result;
-
+    const { type, value } = result.groups;
+    // In the future this could work with other authorization types
     if (type.toLowerCase() !== 'bearer') {
         return undefined;
     }

@@ -9,7 +9,7 @@ import { WithId } from '@strangereal/util-constants';
 export class MarkersService {
     constructor(private readonly markersRepository: MarkersRepository) {}
 
-    create(createMarkerDto: CreateMarkerDto): Promise<number> {
+    create(userId: number, createMarkerDto: CreateMarkerDto): Promise<number> {
         const [x, y] = createMarkerDto.coordinates;
         const marker: MarkerDetails = {
             x, y,
@@ -21,7 +21,7 @@ export class MarkersService {
             marker.name = createMarkerDto.name;
         }
 
-        return this.markersRepository.createMarker(marker);
+        return this.markersRepository.createMarker(userId, marker);
     }
 
     findAll(userId?: number): Promise<Array<WithId<Marker>>> {

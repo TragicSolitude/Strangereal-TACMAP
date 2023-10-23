@@ -1,16 +1,16 @@
 import { ExecutionContext, UnauthorizedException, createParamDecorator } from '@nestjs/common';
-import { TokenClaims } from './claims';
+import { TokenClaims } from './token-claims';
 
 export const Claims = createParamDecorator((_data: unknown, ctx: ExecutionContext) => {
     const request = ctx.switchToHttp().getRequest();
-    const user = request.user;
-    if (!user) {
+    const claims = request.claims;
+    if (!claims) {
         throw new UnauthorizedException();
     }
 
-    if (!(user instanceof Claims)) {
-        console.warn('User value is not instance of token body');
+    if (!(claims instanceof TokenClaims)) {
+        console.warn('Token claims is not an instance of token claims class');
     }
 
-    return user;
+    return claims;
 });

@@ -13,13 +13,13 @@ export class MarkersRepository {
         this.database = dbConnection.database;
     }
 
-    async createMarker(marker: Marker): Promise<number> {
+    async createMarker(userId: number, marker: Marker): Promise<number> {
         const { x, y, type, name } = marker;
         const query = `
-            INSERT INTO markers (x, y, type, name)
-            VALUES (?, ?, ?, ?)
+            INSERT INTO markers (x, y, type, name, user_id)
+            VALUES (?, ?, ?, ?, ?)
         `;
-        const result = await this.database.run(query, x, y, type, name);
+        const result = await this.database.run(query, x, y, type, name, userId);
         if (result.lastID) {
             return result.lastID;
         }
@@ -27,10 +27,11 @@ export class MarkersRepository {
         throw new Error.InsertFailed();
     }
 
+    // TODO Async iterate results?
     getMarkersForUser(userId: number): Promise<Array<WithId<Marker>>> {
         const query = `
             SELECT ROWID as id, x, y, type, name FROM markers
-            WHERE ROWID = ?
+            WHERE user_id = ?
         `;
         return this.database.all<Array<WithId<MarkerDetails>>>(query, userId);
     }
@@ -39,6 +40,11 @@ export class MarkersRepository {
         const query = `SELECT ROWID as id, x, y, type, name FROM markers`;
         return this.database.all<Array<WithId<MarkerDetails>>>(query);
     }
+
+    // TODO encrypt/obfuscate ids and assume they are secure -- they aren't but
+    // close enough, it's easier than passing around the user id everywhere
+    //
+    // see: https://github.com/denostack/inthash
 
     async getMarker(id: number): Promise<Marker> {
         const query = `SELECT x, y, type, name FROM markers WHERE ROWID = ?`;
