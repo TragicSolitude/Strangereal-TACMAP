@@ -4,9 +4,9 @@ import { ModuleConfig } from "./module-config";
 
 @Injectable()
 export class DbConnection implements OnModuleInit {
-    constructor(@Inject('database')
+    constructor(@Inject('SQLITE_DATABASE')
                 public readonly database: Sqlite.Database,
-                @Inject('database-config')
+                @Inject('SQLITE_MODULE_OPTIONS')
                 private readonly config: ModuleConfig) {}
 
     async onModuleInit(): Promise<void> {

@@ -3,7 +3,7 @@ import { Reflector } from '@nestjs/core';
 import { IncomingMessage } from 'http';
 import { RequirePermission } from './require-permission-decorator';
 import { JwtService } from '@nestjs/jwt';
-import { TokenClaims } from './token-claims';
+import { TokenClaims, TokenType } from './token-claims';
 
 const parseAuthorization = /^(?<type>bearer)\s+(?<value>[A-z0-9._-]+)$/i;
 
@@ -47,6 +47,10 @@ export class AuthGuard implements CanActivate {
         let claims: TokenClaims;
         try {
             const payload = await this.jwtService.verifyAsync(token);
+            // TODO internalize this into some token base class/factory
+            if ('tty' in payload && payload.tty !== TokenType.Access) {
+                throw new Error();
+            }
             claims = TokenClaims.fromJwtPayload(payload);
             request['claims'] = claims;
         } catch (e) {
