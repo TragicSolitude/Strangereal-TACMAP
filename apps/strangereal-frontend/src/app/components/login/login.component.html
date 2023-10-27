@@ -1,0 +1,15 @@
+<form [formGroup]="formGroup" (ngSubmit)="submit()">
+    <div class="field fullwidth">
+        <label for="form-username">Username</label>
+        <input type="text" pInputText formControlName="username" id="form-username" />
+    </div>
+    <div class="field buttons">
+        <button pButton
+                type="button"
+                label="Cancel"
+                class="p-button-danger"
+                (click)="dialogRef.close()">
+        </button>
+        <button pButton type="submit" label="Submit"></button>
+    </div>
+</form>

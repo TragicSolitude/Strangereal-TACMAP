@@ -43,6 +43,14 @@ body {
     width: 15em;
 }
 
+.p-card {
+    width: 28em;
+}
+
+.p-card.wide {
+    width: 56em;
+}
+
 /* END CUSTOMIZE PRIMENG */
 
 /* FORMS */
@@ -77,6 +85,14 @@ form > .field > input {
 
 /* END FORMS */
 
+/* OTHER GLOBAL STYLES */
+
+.page {
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
 :root {
     --safe-area: 0.5rem;
     --safe-area-top: 4.64rem;
@@ -85,3 +101,5 @@ form > .field > input {
     --safe-area-bottom: var(--safe-area);
     --sidebar-size: 8rem;
 }
+
+/* END OTHER GLOBAL STYLES */
