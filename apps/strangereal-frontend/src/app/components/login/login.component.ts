@@ -4,6 +4,7 @@ import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angula
 import { InputTextModule } from 'primeng/inputtext';
 import { ButtonModule } from 'primeng/button';
 import { DynamicDialogConfig, DynamicDialogRef } from 'primeng/dynamicdialog';
+import { AuthRepository } from '@strangereal/data-access-api';
 
 @Component({
     selector: 'strangereal-login',
@@ -22,6 +23,7 @@ export class LoginComponent {
     public readonly formGroup: FormGroup;
 
     constructor(form: FormBuilder,
+                private readonly authRepository: AuthRepository,
                 public readonly dialogRef: DynamicDialogRef,
                 public readonly config: DynamicDialogConfig) {
         this.formGroup = form.group({
@@ -35,9 +37,11 @@ export class LoginComponent {
         if (this.formGroup.valid) {
             const { username } = this.formGroup.value;
 
-            // TODO Login and update auth state
+            this.authRepository.login(username).then(() => {
+                this.dialogRef.close();
+            });
 
-            this.dialogRef.close();
+            // TODO show loading spinner
         }
     }
 }

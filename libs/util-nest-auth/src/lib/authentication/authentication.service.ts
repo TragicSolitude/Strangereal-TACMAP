@@ -7,6 +7,10 @@ import * as Bcrypt from 'bcrypt';
 export class AuthenticationService {
     constructor(private readonly userService: UserRepository) {}
 
+    async findUserById(id: number): Promise<UserDetails | null> {
+        return this.userService.findUserById(id);
+    }
+
     async findLogin(username: string, password: string): Promise<UserDetails | null> {
         const user = await this.userService.findUserByUsername(username);
         // TODO verify that empty string is the same as random junk for timing

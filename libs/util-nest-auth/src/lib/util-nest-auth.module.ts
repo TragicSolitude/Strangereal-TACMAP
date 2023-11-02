@@ -66,7 +66,7 @@ export class UtilNestAuthModule {
                     global: true,
                     inject: [ConfigService],
                     useFactory: (config: ConfigService) => ({
-                        secret: config.get<string>('jwt.secret', 'secret-should-not-have-default'),
+                        secret: config.getOrThrow<string>('secret'),
                         signOptions: {
                             expiresIn: config.get<string>('jwt.ttl', '60s')
                         }

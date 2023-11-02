@@ -34,7 +34,9 @@ export class MarkerRepository {
     }
 
     getAll(): Promise<Array<WithId<Marker>>> {
-        const request = this.http.get<Array<WithId<Marker>>>('/api/markers');
+        const request = this.http.get<Array<WithId<Marker>>>('/api/markers', {
+            withCredentials: true
+        });
 
         return firstValueFrom(request);
     }

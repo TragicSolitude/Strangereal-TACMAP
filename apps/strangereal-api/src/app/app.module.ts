@@ -23,15 +23,11 @@ if (process.env.NODE_ENV === 'production') {
 @Module({
     imports: [
         ConfigModule.forRoot({ isGlobal: true }),
-        // UtilNestSqliteModule.forRoot({
-        //     filename: process.env.DB_PATH || '/tmp/strangereal-database.sqlite',
-        //     migrations: Path.join(__dirname, '/assets/migrations')
-        // }),
         UtilNestSqliteModule.forRootAsync({
             inject: [ConfigService],
             useFactory: (config: ConfigService) => ({
-                filename: config.get<string>('database.path', '/tmp/strangereal-database.sqlite'),
-                migrations: config.get<string>('database.migrations', Path.join(__dirname, '/assets/migrations'))
+                filename: config.getOrThrow<string>('database_path'),
+                migrations: config.get<string>('database_migrations', Path.join(__dirname, '/assets/migrations'))
             })
         }),
         // TODO update secret key with env var

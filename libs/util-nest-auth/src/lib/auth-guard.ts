@@ -4,6 +4,7 @@ import { IncomingMessage } from 'http';
 import { RequirePermission } from './require-permission-decorator';
 import { JwtService } from '@nestjs/jwt';
 import { TokenClaims, TokenType } from './token-claims';
+import { FastifyRequest } from 'fastify';
 
 const parseAuthorization = /^(?<type>bearer)\s+(?<value>[A-z0-9._-]+)$/i;
 
@@ -13,24 +14,34 @@ const parseAuthorization = /^(?<type>bearer)\s+(?<value>[A-z0-9._-]+)$/i;
  * NOTE: Currently only works with Bearer JWTs but may be changed in the future
  * to support other authentication mechanisms for some reason.
  */
-function extractTokenFromHeader(request: IncomingMessage): string | undefined {
+function extractTokenFromHeader(request: IncomingMessage): string | null {
     const authorization = request.headers['authorization'];
     if (!authorization) {
-        return undefined;
+        return null;
     }
 
     const result = parseAuthorization.exec(authorization);
     if (!result || !result.groups) {
-        return undefined;
+        return null;
     }
 
     const { type, value } = result.groups;
     // In the future this could work with other authorization types
     if (type.toLowerCase() !== 'bearer') {
-        return undefined;
+        return null;
     }
 
     return value;
+}
+
+// TODO Make this platform-independent
+function extractTokenFromCookies(request: FastifyRequest): string | null {
+    const accessToken = request.cookies['access-token'];
+    if (!accessToken) {
+        return null;
+    }
+
+    return accessToken;
 }
 
 @Injectable()
@@ -40,7 +51,7 @@ export class AuthGuard implements CanActivate {
 
     async canActivate(context: ExecutionContext): Promise<boolean> {
         const request = context.switchToHttp().getRequest();
-        const token = extractTokenFromHeader(request);
+        const token = extractTokenFromHeader(request) || extractTokenFromCookies(request);
         if (!token) {
             throw new UnauthorizedException();
         }

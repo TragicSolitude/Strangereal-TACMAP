@@ -12,6 +12,10 @@ export class UsersService implements OnModuleInit {
         console.log('Module init', Date.now());
     }
 
+    findUserById(id: number): Promise<User | null> {
+        return this.usersRepository.findUserById(id);
+    }
+
     findUserByUsername(username: string): Promise<User | null> {
         return this.usersRepository.findUserByUsername(username);
     }
