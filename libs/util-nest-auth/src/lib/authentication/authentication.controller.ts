@@ -12,14 +12,8 @@ const seconds = 1000;
 const minutes = 60*seconds;
 const hours = 60*minutes;
 const days = 24*hours;
-const cookieOptions = {
-    signed: false,
-    sameSite: 'strict',
-    httpOnly: true,
-    path: '/',
-    secure: false
-} as const;
 
+// These options cannot change without clearing the old cookies first somehow
 const accessTokenCookieOptions = {
     signed: false,
     sameSite: 'strict',

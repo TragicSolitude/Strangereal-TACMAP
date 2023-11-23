@@ -29,63 +29,73 @@ export class KeyboardShortcutsService {
     }
 
     // TODO unify key handling a bit or something idk
-    keyDown(event: KeyboardEvent): Promise<void> {
+    async keyDown(event: KeyboardEvent): Promise<void> {
+        if (document.activeElement instanceof HTMLInputElement) {
+            // Don't want to do anything here if an input element is focused
+            // (and presumably the user is typing)
+            return;
+        }
+
         if (!this.keybinds) {
-            throw new Error('Attempted to handle key before registering keybinds');
+            console.info('Attempted to handle key before registering keybinds');
+            return;
         }
 
         const keybind = this.keybinds.find(keybind => keybind.key === event.code);
         if (!keybind || !keybind.onKeyDown) {
-            return Promise.resolve();
+            return;
         }
 
-        if (keybind.modifiers) {
-            for (const modifier of keybind.modifiers) {
-                if (!event[modifier]) {
-                    return Promise.resolve();
-                }
+        for (const modifier of Object.values(Modifier)) {
+            const keybindHasModifier = Boolean(keybind.modifiers?.includes(modifier));
+
+            // XOR
+            if (event[modifier] !== keybindHasModifier) {
+                return;
             }
         }
 
-        try {
-            const result = keybind.onKeyDown(event);
-            if (result instanceof Promise) {
-                return result;
-            }
+        // Override any other actions bound to this key
+        event.preventDefault();
 
-            return Promise.resolve(result);
-        } catch (e) {
-            return Promise.reject(e);
+        const result = keybind.onKeyDown(event);
+        if (result instanceof Promise) {
+            await result;
         }
     }
 
-    keyUp(event: KeyboardEvent): Promise<void> {
+    async keyUp(event: KeyboardEvent): Promise<void> {
+        if (document.activeElement instanceof HTMLInputElement) {
+            // Don't want to do anything here if an input element is focused
+            // (and presumably the user is typing)
+            return;
+        }
+
         if (!this.keybinds) {
-            throw new Error('Attempted to handle key before registering keybinds');
+            console.info('Attempted to handle key before registering keybinds');
+            return;
         }
 
         const keybind = this.keybinds.find(keybind => keybind.key === event.code);
         if (!keybind || !keybind.onKeyUp) {
-            return Promise.resolve();
+            return;
         }
 
-        if (keybind.modifiers) {
-            for (const modifier of keybind.modifiers) {
-                if (!event[modifier]) {
-                    return Promise.resolve();
-                }
+        for (const modifier of Object.values(Modifier)) {
+            const keybindHasModifier = Boolean(keybind.modifiers?.includes(modifier));
+
+            // XOR
+            if (event[modifier] !== keybindHasModifier) {
+                return;
             }
         }
 
-        try {
-            const result = keybind.onKeyUp(event);
-            if (result instanceof Promise) {
-                return result;
-            }
+        // Override any other actions bound to this key
+        event.preventDefault();
 
-            return Promise.resolve(result);
-        } catch (e) {
-            return Promise.reject(e);
+        const result = keybind.onKeyUp(event);
+        if (result instanceof Promise) {
+            await result;
         }
     }
 

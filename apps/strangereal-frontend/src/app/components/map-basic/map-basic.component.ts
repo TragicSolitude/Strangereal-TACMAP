@@ -1,4 +1,4 @@
-import { AfterViewInit, ChangeDetectionStrategy, Component, ElementRef, HostListener, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import { AfterViewInit, ChangeDetectionStrategy, Component, ElementRef, EventEmitter, HostListener, Input, OnChanges, OnDestroy, OnInit, Output, SimpleChanges, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ContextMenuModule } from 'primeng/contextmenu';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
@@ -59,7 +59,15 @@ function centerScale(boundingBox: DOMRect, k: number): string {
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class MapBasicComponent implements AfterViewInit, OnInit {
-    Allegiance = MarkerType.Allegiance;
+    readonly Allegiance = MarkerType.Allegiance;
+    readonly contextMenuItems: MenuItem[] = [
+        {label: 'Help',
+         icon: 'pi pi-question-circle',
+         command: () => this.showHelp()},
+        {label: 'Keyboard Shortcuts',
+         icon: 'pi pi-sliders-h',
+         command: () => this.keyboardShortcutsService.showHelp()}
+    ];
 
     @ViewChild('container', { static: true })
     containerRef!: ElementRef<HTMLElement>;
@@ -70,16 +78,7 @@ export class MapBasicComponent implements AfterViewInit, OnInit {
     markers!: WeakMap<SVGUseElement, Marker>;
 
     // TODO Maybe turn this into a modal kind of thing?
-    currentAllegiance: MarkerType.Allegiance | undefined = undefined;
-
-    readonly contextMenuItems: MenuItem[] = [
-        {label: 'Help',
-         icon: 'pi pi-question-circle',
-         command: () => this.showHelp()},
-        {label: 'Keyboard Shortcuts',
-         icon: 'pi pi-sliders-h',
-         command: () => this.keyboardShortcutsService.showHelp()}
-    ];
+    currentAllegiance: MarkerType.Allegiance | undefined;
 
     private tooltip!: D3.Selection<HTMLElement, unknown, null, unknown>;
     private map!: D3.Selection<HTMLElement, unknown, null, unknown>;
@@ -153,21 +152,21 @@ export class MapBasicComponent implements AfterViewInit, OnInit {
         this.tooltip = D3.select(this.tooltipRef.nativeElement);
 
         // Load map
-        D3.svg('assets/map.svg')
-            .then(xml => {
-                node.appendChild(xml.documentElement);
+        D3.svg('assets/map.svg').then(xml => {
+            node.appendChild(xml.documentElement);
 
-                const map = container.select<HTMLElement>('svg');
-                this.map = map;
-                this.initializeMap(map);
+            const map = container.select<HTMLElement>('svg');
+            this.map = map;
+            this.initializeMap(map);
 
-                return this.markerRepository.getAll();
-            })
-            .then(markers => {
+            this.markerRepository.getAll().then(markers => {
                 for (const marker of markers) {
                     this.addMarker(marker, true);
                 }
             });
+
+            // this.mapLoaded.emit();
+        });
     }
 
     // TODO figure out how to localize the key events?

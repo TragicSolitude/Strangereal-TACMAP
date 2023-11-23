@@ -15,7 +15,7 @@ export class UsersRepository {
     async findUserById(id: number): Promise<User | null> {
         const query = `
             SELECT ROWID as id, username, password, permissions FROM users
-            WHERE username = ?
+            WHERE ROWID = ?
         `;
 
         const result = await this.database.get(query, id);
