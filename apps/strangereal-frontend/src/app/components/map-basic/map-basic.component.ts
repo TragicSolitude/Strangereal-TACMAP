@@ -28,7 +28,7 @@ const MARKER_ZOOM_LIMIT = 10;
 /**
  * The square width/height of the marker bounding boxes
  */
-const MARKER_SIZE = 180;
+const MARKER_SIZE = 120;
 
 /**
  * From https://stackoverflow.com/a/47347813
@@ -178,7 +178,18 @@ export class MapBasicComponent implements AfterViewInit, OnInit {
             return;
         }
 
+        if (event.shiftKey) {
+            this.containerRef.nativeElement.classList.add('shift');
+        }
+
         this.keyboardShortcutsService.keyDown(event).catch();
+    }
+
+    @HostListener('document:keyup', ['$event'])
+    onKeyUp(event: KeyboardEvent): void {
+        if (!event.shiftKey) {
+            this.containerRef.nativeElement.classList.remove('shift');
+        }
     }
 
     private initializeMap(map: D3.Selection<HTMLElement, unknown, null, unknown>): void {
@@ -226,8 +237,10 @@ export class MapBasicComponent implements AfterViewInit, OnInit {
         });
     }
 
+    // TODO Figure out how to connect this into the keybinds service
     private async onClick(event: MouseEvent): Promise<void> {
-        if (event.ctrlKey) {
+        // Respond only to shift-click
+        if (!event.shiftKey || event.ctrlKey || event.altKey) {
             return;
         }
 
@@ -343,12 +356,24 @@ export class MapBasicComponent implements AfterViewInit, OnInit {
                 //
                 // x and y offsets are also derived from experimentation. Also no
                 // idea if it will maintain nor what it represents
-                boundingBox = new DOMRect((x - MARKER_SIZE / 2) + 4.556884765625,
-                                          (y - MARKER_SIZE / 2) + 33.037994384765625,
+                //
+                // The following code corresponds to size 180
+                //
+                // boundingBox = new DOMRect((x - MARKER_SIZE / 2) + 4.556884765625,
+                //                           (y - MARKER_SIZE / 2) + 33.037994384765625,
+                //                           // Width
+                //                           MARKER_SIZE * 0.9493672688802083,
+                //                           // Height
+                //                           MARKER_SIZE * 0.6329111735026042);
+
+                // Don't know why this works without modifications but it does
+                // I think?
+                boundingBox = new DOMRect((x - MARKER_SIZE / 2),
+                                          (y - MARKER_SIZE / 2),
                                           // Width
-                                          MARKER_SIZE * 0.9493672688802083,
+                                          MARKER_SIZE,
                                           // Height
-                                          MARKER_SIZE * 0.6329111735026042);
+                                          MARKER_SIZE);
             } else {
                 boundingBox = node.getBBox();
             }

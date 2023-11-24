@@ -10,6 +10,10 @@ figure {
     user-select: none;
 }
 
+figure.shift {
+    cursor: crosshair;
+}
+
 .tooltip {
     display: none;
     position: absolute;
