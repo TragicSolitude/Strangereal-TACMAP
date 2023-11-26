@@ -77,9 +77,13 @@ export class MarkerDetailsComponent implements AfterViewInit {
     }
 
     ngAfterViewInit(): void {
-        // Needs to be delayed slightly so it's positioned correctly after the
-        // short dialog animation
-        setTimeout(() => this.dropdown.show(), 100);
+        // Don't show the dropdown if the type is already selected (i.e. the
+        // dialog is editing an existing marker not creating a new one)
+        if (!('type' in this.config.data)) {
+            // Needs to be delayed slightly so it's positioned correctly after
+            // the short dialog animation
+            setTimeout(() => this.dropdown.show(), 100);
+        }
     }
 
     // TODO figure out how to submit when enter is pressed in the form but not
