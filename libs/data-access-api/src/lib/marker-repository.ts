@@ -4,10 +4,13 @@ import { firstValueFrom } from "rxjs";
 import { Marker } from "./types/marker";
 import { MarkerType, WithId } from "@strangereal/util-constants";
 
-interface MarkerDto {
-    coordinates: [number, number],
-    type: MarkerType.Type,
-    name?: string
+interface MarkerDetails {
+    type: MarkerType.Type;
+    name?: string;
+}
+
+interface MarkerDto extends MarkerDetails {
+    coordinates: [number, number];
 }
 
 @Injectable()
@@ -52,6 +55,15 @@ export class MarkerRepository {
     async updateName(id: number, name: string): Promise<void> {
         const request = this.http.patch(`/api/markers/${id}`, {
             name
+        });
+
+        await firstValueFrom(request);
+    }
+
+    async updateDetails(id: number, details: MarkerDetails): Promise<void> {
+        const request = this.http.patch(`/api/markers/${id}`, {
+            type: details.type,
+            name: details.name
         });
 
         await firstValueFrom(request);

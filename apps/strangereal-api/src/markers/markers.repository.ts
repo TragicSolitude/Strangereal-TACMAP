@@ -3,7 +3,7 @@ import { DbConnection } from "@strangereal/util-nest-sqlite";
 import { Marker, MarkerDetails } from "./entities/marker.entity";
 import * as Sqlite from 'sqlite';
 import * as Error from './error';
-import { WithId } from "@strangereal/util-constants";
+import { MarkerType, WithId } from "@strangereal/util-constants";
 
 @Injectable()
 export class MarkersRepository {
@@ -46,9 +46,10 @@ export class MarkersRepository {
     //
     // see: https://github.com/denostack/inthash
 
-    async getMarker(id: number): Promise<Marker> {
-        const query = `SELECT x, y, type, name FROM markers WHERE ROWID = ?`;
-        const record = await this.database.get<Marker>(query, id);
+    async getMarker(userId: number, id: number): Promise<Marker> {
+        const query = `SELECT x, y, type, name FROM markers
+                       WHERE ROWID = ? AND user_id = ?`;
+        const record = await this.database.get<Marker>(query, id, userId);
         if (!record) {
             throw new Error.MarkerNotFound();
         }
@@ -56,25 +57,36 @@ export class MarkersRepository {
         return record;
     }
 
-    async updateName(id: number, name: string): Promise<void> {
-        const query = `UPDATE markers SET name = ? WHERE ROWID = ?`;
-        const result = await this.database.run(query, name, id);
+    async updateType(userId: number, id: number, type: MarkerType.Type): Promise<void> {
+        const query = `UPDATE markers SET type = ?
+                       WHERE ROWID = ? AND user_id = ?`;
+        const result = await this.database.run(query, type, id, userId);
         if (result.changes !== 1) {
             throw new Error.MarkerNotFound();
         }
     }
 
-    async updatePosition(id: number, [x, y]: [number, number]): Promise<void> {
-        const query = `UPDATE markers SET x = ?, y = ? WHERE ROWID = ?`;
-        const result = await this.database.run(query, x, y, id);
+    async updateName(userId: number, id: number, name: string | null): Promise<void> {
+        const query = `UPDATE markers SET name = ?
+                       WHERE ROWID = ? AND user_id = ?`;
+        const result = await this.database.run(query, name, id, userId);
         if (result.changes !== 1) {
             throw new Error.MarkerNotFound();
         }
     }
 
-    async removeMarker(id: number): Promise<void> {
-        const query = `DELETE FROM markers WHERE ROWID = ?`;
-        const result = await this.database.run(query, id);
+    async updatePosition(userId: number, id: number, [x, y]: [number, number]): Promise<void> {
+        const query = `UPDATE markers SET x = ?, y = ?
+                       WHERE ROWID = ? AND user_id = ?`;
+        const result = await this.database.run(query, x, y, id, userId);
+        if (result.changes !== 1) {
+            throw new Error.MarkerNotFound();
+        }
+    }
+
+    async removeMarker(userId: number, id: number): Promise<void> {
+        const query = `DELETE FROM markers WHERE ROWID = ? AND user_id = ?`;
+        const result = await this.database.run(query, id, userId);
         if (result.changes !== 1) {
             throw new Error.MarkerNotFound();
         }

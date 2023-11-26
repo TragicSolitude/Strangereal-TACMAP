@@ -120,6 +120,7 @@ export const KEYNAMES = {
     ShiftRight: 'Right Shift',
     NumpadMultiply: '',
     AltLeft: 'Left Alt',
+    AltRight: 'Right Alt',
     Space: 'Space',
     CapsLock: 'Caps Lock',
     // TODO Function keys

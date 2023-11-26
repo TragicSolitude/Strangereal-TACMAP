@@ -29,6 +29,13 @@ const MARKER_ZOOM_LIMIT = 10;
  * The square width/height of the marker bounding boxes
  */
 const MARKER_SIZE = 120;
+/**
+ * The distance the user must "drag" the icon in screen space before it starts
+ * actually moving. This is to prevent clicking the icon from triggering a
+ * drag event even with a small amount of movement from the mouse. Larger
+ * values will appear to "snap" the marker to it's original position.
+ */
+const DRAG_THRESHOLD = Math.PI;
 
 /**
  * From https://stackoverflow.com/a/47347813
@@ -41,6 +48,14 @@ function centerScale(boundingBox: DOMRect, k: number): string {
     const zy = cy - zoomDelta * cy;
 
     return `matrix(${zoomDelta}, 0, 0, ${zoomDelta}, ${zx}, ${zy})`;
+}
+
+function symbolResource(type: MarkerType.Type): string {
+    return `/assets/symbology-sprite.svg#symbology-${type}`;
+}
+
+function distance(x1: number, y1: number, x2: number, y2: number): number {
+    return Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
 }
 
 @Component({
@@ -75,7 +90,7 @@ export class MapBasicComponent implements AfterViewInit, OnInit {
     @ViewChild('tooltip', { static: true })
     tooltipRef!: ElementRef<HTMLElement>;
 
-    markers!: WeakMap<SVGUseElement, Marker>;
+    markers!: WeakMap<SVGUseElement, Marker & { id?: number }>;
 
     // TODO Maybe turn this into a modal kind of thing?
     currentAllegiance: MarkerType.Allegiance | undefined;
@@ -114,7 +129,7 @@ export class MapBasicComponent implements AfterViewInit, OnInit {
             {key: 'KeyR',
              description: 'Repeat last unit',
              onKeyDown: event => {
-                if (event.ctrlKey || !this.lastMarker) {
+                if (!this.lastMarker) {
                     return;
                 }
 
@@ -178,8 +193,12 @@ export class MapBasicComponent implements AfterViewInit, OnInit {
             return;
         }
 
-        if (event.shiftKey) {
+        if (event.shiftKey && !event.altKey && !event.ctrlKey) {
             this.containerRef.nativeElement.classList.add('shift');
+        } else if (event.altKey && !event.shiftKey && !event.ctrlKey) {
+            this.containerRef.nativeElement.classList.add('edit');
+        } else if (event.ctrlKey && !event.altKey && !event.shiftKey) {
+            this.containerRef.nativeElement.classList.add('remove');
         }
 
         this.keyboardShortcutsService.keyDown(event).catch();
@@ -189,6 +208,12 @@ export class MapBasicComponent implements AfterViewInit, OnInit {
     onKeyUp(event: KeyboardEvent): void {
         if (!event.shiftKey) {
             this.containerRef.nativeElement.classList.remove('shift');
+        }
+        if (!event.altKey) {
+            this.containerRef.nativeElement.classList.remove('edit');
+        }
+        if (!event.ctrlKey) {
+            this.containerRef.nativeElement.classList.remove('remove');
         }
     }
 
@@ -246,11 +271,10 @@ export class MapBasicComponent implements AfterViewInit, OnInit {
 
         const [x, y] = D3.pointer(event, this.baseElement);
         const allegiance = this.currentAllegiance;
-
         this.currentAllegiance = undefined;
         this.dialog = this.dialogService.open(MarkerDetailsComponent, {
             data: { x, y, allegiance },
-            header: 'Add a New Point of Interest',
+            header: 'Add a New Marker',
             width: '28em',
             closeOnEscape: true
         });
@@ -275,15 +299,15 @@ export class MapBasicComponent implements AfterViewInit, OnInit {
      * load. Only a temporary solution to weird DOM race condition problems.
      */
     private addMarker(marker: Marker & { id?: number }, initial = false): SVGUseElement {
-        const { x, y, type } = marker;
         const figure = this.overlay.append('use')
-            .attr('xlink:href', `/assets/symbology-sprite.svg#symbology-${type}`)
-            .attr('x', x - MARKER_SIZE / 2)
-            .attr('y', y - MARKER_SIZE / 2)
+            .attr('xlink:href', symbolResource(marker.type))
+            .attr('x', marker.x - MARKER_SIZE / 2)
+            .attr('y', marker.y - MARKER_SIZE / 2)
             .attr('width', MARKER_SIZE)
             .attr('height', MARKER_SIZE)
             // .attr('transform', centerScale(boundingBox, this.currentScale))
             // .attr('transform-origin', 'center')
+            .classed('marker', true)
             .on('mouseover', event => {
                 this.tooltip.style('display', 'block');
                 D3.select(event.target).style('stroke', 'black');
@@ -294,7 +318,7 @@ export class MapBasicComponent implements AfterViewInit, OnInit {
                     tooltipContent.push(`<b>${marker.name}</b>`);
                 }
 
-                tooltipContent.push(MarkerType.toString(type));
+                tooltipContent.push(MarkerType.toString(marker.type));
 
                 const [x, y] = D3.pointer(event, this.containerRef.nativeElement);
                 this.tooltip
@@ -305,8 +329,57 @@ export class MapBasicComponent implements AfterViewInit, OnInit {
                 this.tooltip.style('display', 'none');
                 D3.select(event.target).style('stroke', 'none');
             })
-            .on('click', (event: MouseEvent) => {
-                if (!event.ctrlKey) {
+            .on('click.edit', (event: MouseEvent) => {
+                // Alt+Click => Edit Marker
+                if (!(event.altKey && !event.ctrlKey && !event.shiftKey)) {
+                    return;
+                }
+
+                const id = marker.id;
+                if (typeof id === 'undefined') {
+                    return;
+                }
+
+                if (typeof this.currentAllegiance !== 'undefined') {
+                    // Shortcut to update allegiance on units
+                    const newType = MarkerType.changeSides(marker.type, this.currentAllegiance);
+
+                    this.markerRepository.updateDetails(id, {type: newType}).then(() => {
+                        marker.type = newType;
+                        figure.attr('xlink:href', symbolResource(newType))
+                              .classed('pending', false);
+                    });
+
+                    return;
+                }
+
+                this.dialog = this.dialogService.open(MarkerDetailsComponent, {
+                    data: marker,
+                    header: 'Edit Marker',
+                    width: '28em',
+                    closeOnEscape: true
+                });
+
+                this.dialog.onClose.subscribe((updatedMarker: Marker) => {
+                    this.dialog = undefined;
+
+                    if (!updatedMarker) {
+                        // User cancelled without saving
+                        return;
+                    }
+
+                    figure.classed('pending', true);
+                    this.markerRepository.updateDetails(id, updatedMarker).then(() => {
+                        // Update the marker reference with the new stuff
+                        Object.assign(marker, updatedMarker);
+                        figure.attr('xlink:href', symbolResource(updatedMarker.type))
+                              .classed('pending', false);
+                    });
+                });
+            })
+            .on('click.delete', (event: MouseEvent) => {
+                // Ctrl+Click => Delete marker
+                if (!(event.ctrlKey && !event.shiftKey && !event.altKey)) {
                     return;
                 }
 
@@ -333,7 +406,6 @@ export class MapBasicComponent implements AfterViewInit, OnInit {
                     }
                 });
             });
-            // TODO click handler that opens dialog to edit or delete
 
         if (!marker.id) {
             figure.classed('pending', true);
@@ -359,8 +431,8 @@ export class MapBasicComponent implements AfterViewInit, OnInit {
                 //
                 // The following code corresponds to size 180
                 //
-                // boundingBox = new DOMRect((x - MARKER_SIZE / 2) + 4.556884765625,
-                //                           (y - MARKER_SIZE / 2) + 33.037994384765625,
+                // boundingBox = new DOMRect((marker.x - MARKER_SIZE / 2) + 4.556884765625,
+                //                           (marker.y - MARKER_SIZE / 2) + 33.037994384765625,
                 //                           // Width
                 //                           MARKER_SIZE * 0.9493672688802083,
                 //                           // Height
@@ -368,8 +440,8 @@ export class MapBasicComponent implements AfterViewInit, OnInit {
 
                 // Don't know why this works without modifications but it does
                 // I think?
-                boundingBox = new DOMRect((x - MARKER_SIZE / 2),
-                                          (y - MARKER_SIZE / 2),
+                boundingBox = new DOMRect((marker.x - MARKER_SIZE / 2),
+                                          (marker.y - MARKER_SIZE / 2),
                                           // Width
                                           MARKER_SIZE,
                                           // Height
@@ -383,28 +455,52 @@ export class MapBasicComponent implements AfterViewInit, OnInit {
             figure.attr('transform', centerScale(boundingBox, k));
         }
 
-        const callback = (event: D3.D3DragEvent<SVGUseElement, unknown, unknown>) => {
-            const boundingBox = node.getBBox();
-            const k = Math.max(D3.zoomTransform(this.mapElement).k, MARKER_ZOOM_LIMIT);
-
-            const [x, y] = D3.pointer(event, this.baseElement);
-            marker.x = x;
-            marker.y = y;
-            figure.attr('x', x - (MARKER_SIZE / 2))
-                  .attr('y', y - (MARKER_SIZE / 2))
-                  .attr('transform', centerScale(boundingBox, k));
-
-            if (event.type === 'end' && marker.id) {
-                node.classList.add('pending');
-                this.markerRepository.updatePosition(marker.id, x, y).then(() => {
-                    node.classList.remove('pending');
-                });
-            }
-        };
         figure.call(D3.drag<SVGUseElement, unknown>()
-            .filter(event => event.shiftKey && !event.button)
-            .on('drag', callback)
-            .on('end', callback));
+            .filter(event => event.altKey && !event.shiftKey && !event.ctrlKey && !event.button)
+            .on('start', (start: D3.D3DragEvent<SVGUseElement, unknown, unknown>) => {
+                const referenceX = start.sourceEvent.clientX;
+                const referenceY = start.sourceEvent.clientY;
+                const startX = marker.x;
+                const startY = marker.y;
+
+                start.on('drag', (event: D3.D3DragEvent<SVGUseElement, unknown, unknown>) => {
+                    let [x, y] = D3.pointer(event, this.baseElement);
+
+                    // Snap to original starting position
+                    const { clientX, clientY } = event.sourceEvent;
+                    if (distance(referenceX, referenceY, clientX, clientY) < DRAG_THRESHOLD) {
+                        x = startX;
+                        y = startY;
+                    }
+
+                    const boundingBox = node.getBBox();
+                    const k = Math.max(D3.zoomTransform(this.mapElement).k, MARKER_ZOOM_LIMIT);
+
+                    marker.x = x;
+                    marker.y = y;
+                    figure.attr('x', x - (MARKER_SIZE / 2))
+                          .attr('y', y - (MARKER_SIZE / 2))
+                          .attr('transform', centerScale(boundingBox, k));
+                });
+
+                start.on('end', (event: D3.D3DragEvent<SVGUseElement, unknown, unknown>) => {
+                    if (!marker.id) {
+                        return;
+                    }
+
+                    const { clientX, clientY } = event.sourceEvent;
+                    if (distance(referenceX, referenceY, clientX, clientY) < DRAG_THRESHOLD) {
+                        return;
+                    }
+
+                    const [x, y] = D3.pointer(event, this.baseElement);
+
+                    node.classList.add('pending');
+                    this.markerRepository.updatePosition(marker.id, x, y).then(() => {
+                        node.classList.remove('pending');
+                    });
+                });
+            }));
 
         return node;
     }

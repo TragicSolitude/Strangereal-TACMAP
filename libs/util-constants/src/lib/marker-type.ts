@@ -474,6 +474,23 @@ export function forAllegiance(allegiance: Allegiance | undefined): readonly Type
     }
 }
 
+export function changeSides(type: Type, allegiance: Allegiance): Type {
+    // This whole thing assumes that the same types exist in each allegiance.
+    // If that assumption is broken this function will corrupt data.
+    const baseType = type.slice(2);
+    switch (allegiance) {
+        case Allegiance.Friendly:
+            return `f-${baseType}` as Type;
+        case Allegiance.Hostile:
+            return `h-${baseType}` as Type;
+        case Allegiance.Neutral:
+            return `n-${baseType}` as Type;
+        case Allegiance.Unknown:
+        default:
+            return `u-${baseType}` as Type;
+    }
+}
+
 export const friendly = [
     Type.FriendlyAirDefense,
     Type.FriendlyAmphibious,

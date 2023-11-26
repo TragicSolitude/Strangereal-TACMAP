@@ -38,21 +38,32 @@ export class MarkersController {
     }
 
     @Get(':id')
-    findOne(@Param('id') id: string) {
-        return this.markersService.findOne(Number(id));
+    findOne(@Param('id') id: string, @Claims() claims: TokenClaims) {
+        return this.markersService.findOne(claims.getUserId(), Number(id));
     }
 
     @Patch(':id')
-    update(@Param('id') id: string, @Body() updateMarkerDto: UpdateMarkerDto) {
-        if (!updateMarkerDto.coordinates && !updateMarkerDto.coordinates) {
+    update(@Param('id') id: string,
+           @Body() updateMarkerDto: UpdateMarkerDto,
+           @Claims() claims: TokenClaims) {
+        let hasUpdates = false;
+        for (const key of ['coordinates', 'name', 'type']) {
+            if (key in updateMarkerDto) {
+                hasUpdates = true;
+            }
+        }
+
+        if (!hasUpdates) {
             return;
         }
 
-        return this.markersService.update(+id, updateMarkerDto);
+        return this.markersService.update(claims.getUserId(),
+                                          Number(id),
+                                          updateMarkerDto);
     }
 
     @Delete(':id')
-    remove(@Param('id') id: string) {
-        return this.markersService.remove(+id);
+    remove(@Param('id') id: string, @Claims() claims: TokenClaims) {
+        return this.markersService.remove(claims.getUserId(), Number(id));
     }
 }

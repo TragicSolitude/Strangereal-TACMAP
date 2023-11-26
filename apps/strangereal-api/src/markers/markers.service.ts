@@ -32,22 +32,28 @@ export class MarkersService {
         }
     }
 
-    findOne(id: number) {
-        return this.markersRepository.getMarker(id);
+    findOne(userId: number, id: number) {
+        return this.markersRepository.getMarker(userId, id);
     }
 
-    async update(id: number, updateMarkerDto: UpdateMarkerDto) {
-        const { name, coordinates } = updateMarkerDto;
+    async update(userId: number, id: number, updateMarkerDto: UpdateMarkerDto) {
+        const { name, coordinates, type } = updateMarkerDto;
 
-        if (name) {
-            await this.markersRepository.updateName(id, name);
+
+        // TODO optimize this for when type and name are provided at the same
+        // time (as they often will be)
+        if (type) {
+            await this.markersRepository.updateType(userId, id, type);
+        }
+        if (typeof name !== 'undefined') {
+            await this.markersRepository.updateName(userId, id, name);
         }
         if (coordinates) {
-            await this.markersRepository.updatePosition(id, coordinates);
+            await this.markersRepository.updatePosition(userId, id, coordinates);
         }
     }
 
-    remove(id: number): Promise<void> {
-        return this.markersRepository.removeMarker(id);
+    remove(userId: number, id: number): Promise<void> {
+        return this.markersRepository.removeMarker(userId, id);
     }
 }

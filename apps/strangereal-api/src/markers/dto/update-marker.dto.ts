@@ -1,13 +1,15 @@
-import { PartialType } from '@nestjs/mapped-types';
-import { CreateMarkerDto } from './create-marker.dto';
-import { IsNotEmpty, IsNumber, IsOptional } from 'class-validator';
+import { IsIn, IsNotEmpty, IsNumber, IsOptional } from 'class-validator';
+import { MarkerType } from '@strangereal/util-constants';
 
 export class UpdateMarkerDto {
     @IsOptional()
     @IsNumber(undefined, { each: true })
-    coordinates: [number, number];
+    coordinates?: [number, number];
 
     @IsOptional()
-    @IsNotEmpty()
-    name?: string;
+    @IsIn(MarkerType.all)
+    type?: MarkerType.Type;
+
+    @IsOptional()
+    name?: string | null;
 }

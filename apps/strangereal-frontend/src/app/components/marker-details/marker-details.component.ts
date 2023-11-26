@@ -8,6 +8,8 @@ import { DynamicDialogConfig, DynamicDialogRef } from 'primeng/dynamicdialog';
 import { AutoFocusModule } from 'primeng/autofocus';
 import { MarkerType } from '@strangereal/util-constants';
 
+import * as _ from 'lodash';
+
 interface Entry<T> {
     name: string;
     value: T;
@@ -40,15 +42,13 @@ export class MarkerDetailsComponent implements AfterViewInit {
     constructor(form: FormBuilder,
                 public readonly dialogRef: DynamicDialogRef,
                 public readonly config: DynamicDialogConfig) {
-        const { x, y } = config.data;
+        if (typeof config.data !== 'object' || config.data === null) {
+            throw new Error('Initial details must be provided');
+        }
+        const { x, y, name, type } = config.data;
         if (typeof x === 'undefined' || typeof y === 'undefined') {
             throw new Error('Coordinates must be provided for marker details');
         }
-
-        this.formGroup = form.group({
-            type: form.control<Entry<MarkerType.Type> | null>(null, [Validators.required]),
-            name: form.control<string | null>(null)
-        });
 
         const allegiance = config.data.allegiance as MarkerType.Allegiance | undefined;
         const markerTypes = MarkerType.forAllegiance(allegiance).map(type => ({
@@ -57,6 +57,23 @@ export class MarkerDetailsComponent implements AfterViewInit {
         }));
 
         this.markerTypes = markerTypes;
+        this.formGroup = form.group({
+            type: form.control<Entry<MarkerType.Type> | null>(null, [Validators.required]),
+            name: form.control<string | null>(name || null)
+        });
+
+        if (type) {
+            const entry = {
+                name: MarkerType.toString(type),
+                value: type
+            };
+
+            if (!markerTypes.find(({ value }) => value === type)) {
+                markerTypes.unshift(entry);
+            }
+
+            this.formGroup.controls['type'].setValue(entry);
+        }
     }
 
     ngAfterViewInit(): void {
@@ -77,7 +94,12 @@ export class MarkerDetailsComponent implements AfterViewInit {
         this.formGroup.markAsDirty();
 
         if (this.formGroup.valid) {
-            const { type, name } = this.formGroup.value;
+            let { name } = this.formGroup.value;
+            if (_.isEmpty(name)) {
+                name = null;
+            }
+
+            const { type } = this.formGroup.value;
             const { x, y } = this.config.data;
             const marker = { x, y, name, type: type.value };
 
