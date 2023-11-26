@@ -11,7 +11,6 @@ nx run strangereal-api:build
 nx run strangereal-frontend:build
 
 rsync -r ./dist/apps/strangereal-api/ $host:/home/tacmap/strangereal-api
-rsync -r ./dist/apps/strangereal-api/ $host:/home/tacmap/strangereal-master
 ssh $host <<EOF
     sudo -iu tacmap
     npm i
